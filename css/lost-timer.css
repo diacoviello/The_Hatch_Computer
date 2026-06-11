@@ -1,5 +1,13 @@
 @charset "utf-8";
 
+@font-face {
+	font-family: 'apple-ii';
+	src: url('../assets/fonts/apple-ii.otf') format('opentype');
+	font-weight: normal;
+	font-style: normal;
+	font-display: swap;
+}
+
 .lost-timer {
 	font-family: Helvetica, sans-serif;
 	-webkit-user-select: none;
@@ -14,7 +22,7 @@
 	padding-top: 10px;
 	padding-bottom: 10px;
 	padding-left: 10px;
-	background: black;
+	background: rgba(95, 95, 95, 0.7);
 	font-weight: bold;
 	/* light from above and slightly in front of the timer casts the shadow down and back */
 	box-shadow: 0 16px 26px -6px rgba( 0, 0, 0, 0.7 );
@@ -71,7 +79,7 @@
 	bottom: 0;
   	z-index: 3;
 	/* gives the flip 3d depth so the leading edge swells toward the viewer then shrinks */
-	perspective: 300px;
+	perspective: 400px;
 }
 
 .lost-flipper-number-before,
@@ -99,44 +107,44 @@
 	-webkit-mask-position: bottom;
 	mask-position: bottom;
 	/* light gathers along the bottom edge so the bottom flap reads as bent outward (toward the light) */
-	box-shadow: inset 0 -9px 11px -7px rgba( 255, 255, 255, 0.18 ), inset 0 0 5px rgba( 0, 0, 0, 0.1 );
+	box-shadow: inset 0 -9px 11px -7px rgba( 255, 255, 255, 0.18 ), inset 0 0 5px rgba( 0, 0, 0, 0.15 );
 }
 
 .lost-flipper-bg-white .lost-flipper-number-before {
 	color: #1a1a1a;
 	background: #e2e2e2;
-	border: 1px solid #908f8f;
+	/* border: 1px solid #908f8f; */
 }
 
 .lost-flipper-bg-white .lost-flipper-number-after {
 	color: #1a1a1a;
 	background: #cccccc;
-	border: 1px solid #a29f96;
+	/* border: 1px solid #a29f96; */
 }
 
 .lost-flipper-bg-black .lost-flipper-number-before {
 	color: #f0f0ef;
 	background: #2d2d2b;
-	border: 1px solid #444341;
+	/* border: 1px solid #44434177; */
 }
 
 .lost-flipper-bg-black .lost-flipper-number-after {
 	color: #f0f0ef;
 	background: #1c1c1b;
-	border: 1px solid #34332f;
+	/* border: 1px solid #34332f7e; */
 }
 
 /* glyph "red" cards: a red glyph sits on a black card (number slots 1-3) */
 .lost-flipper-bg-glyph-red .lost-flipper-number-before {
 	color: #ffffff;
 	background: #000000;
-	border: 1px solid #333333;
+	/* border: 1px solid #4f4f4f85; */
 }
 
 .lost-flipper-bg-glyph-red .lost-flipper-number-after {
 	color: #ffffff;
 	background: #1f1f1f;
-	border: 1px solid #3d3d3d;
+	/* border: 1px solid #3c3c3c7e; */
 }
 
 /* glyph "black" cards: a black glyph sits on a red card (number slots 4-5) */
@@ -170,8 +178,8 @@
 
 /* blur only the printed number/glyph (not the card itself) so it isn't legible until it locks */
 .lost-flipper-blur .lost-flipper-number-table-cell {
-	-webkit-filter: blur( 10px );
-	filter: blur( 10px );
+	-webkit-filter: blur( 8px );
+	filter: blur( 8px );
 }
 
 .lost-flipper-number-table {
@@ -208,14 +216,19 @@
 }
 
 .lost-flipper-hg-img {
-	height: 100%;
-	width: 100%;
+	/* size off the casing height (like the digits) so the glyph fills the card
+	   without distorting or overflowing the bottom when the card is wider than tall */
+	height: 37cqh;
+	width: auto;
+	max-width: 100%;
+	display: block;
+	margin: 0 auto;
 }
 
 .lost-timer-dev {
 	margin-top: 15px;
 	font-weight: bold;
-	font-size: 12px;
+	font-size: 16px;
 }
 
 .lost-timer-dev-main-text {

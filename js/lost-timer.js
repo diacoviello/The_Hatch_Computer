@@ -48,11 +48,8 @@ var lostTimer = ( function() {
 		// create lost timer html and populate it to the container
 		self.drawTimer();
 
-		// update height/width/font-size/margin-left according to the height
-		$( self.containerClassCss + ' .lost-flipper' ).css( 'height', self.height + 'px' );
-		$( self.containerClassCss + ' .lost-flipper' ).css( 'width', self.width + 'px' );
-		$( self.containerClassCss + ' .lost-flipper' ).css( 'font-size', ( self.height * .8 ) + 'px' );
-		$( self.containerClassCss + ' .lost-timer-side-right' ).css( 'margin-left', ( self.width / 6 ) + 'px' );
+		// digit size/position is handled in css so the numbers fit the casing windows and
+		// scale with it; self.height is still used to pick the glyph image resolution
 
 		// setup audio for use
 		self.setupAudio();
@@ -125,8 +122,8 @@ var lostTimer = ( function() {
 				'</div>' +
 			'</div>';
 
-			// add html to the container element
-			$( self.containerClassCss ).append( devHtml );
+			// add the dev panel to the body ( not inside the casing, which clips overflow )
+			$( 'body' ).append( devHtml );
 
 			$( self.containerClassCss + '-dev-action-reset' ).on( 'click', function () { // on click for timer reset
 				self.reset();
@@ -826,19 +823,60 @@ var lostTimer = ( function() {
 		// stop all glyphs
 		self.stopGlyphs();
 
-		// count times we play reset animation
-		var count = 0;
-		
-		resetAnimate = setInterval( function () { // randomly display number in each spot until reset sound is complete
-			// update the number slots html
-			self.updateNumbers( true );
+		// work out the digits the timer will settle on for the initial time
+		self.totalSeconds = self.initialSeconds;
+		self.minutes = self.initialSeconds;
+		self.seconds = self.initialSeconds;
+		self.updateTimeVars();
+		var finalNums = { 1: self.num1, 2: self.num2, 3: self.num3, 4: self.num4, 5: self.num5 };
 
-			if ( ++count > 10 ) { // after 10 times stop reset initialize and start timer
-	            clearInterval( resetAnimate );
-	            self.initializeTimer( self.initialSeconds );
-            	self.startTimer();
-	        }
-		}, 120 );
+		// use the same fast, blurred split-flap spin as the 0:00 glyph roll
+		$( self.containerClassCss + ' .lost-flipper' ).addClass( 'lost-flipper-spin lost-flipper-blur' );
+
+		// fresh per slot state so the fast roll picks non-repeating digits and each fold chains
+		self.recentSymbols = {};
+		self.spinning = {};
+		self.glyphTimeouts = {};
+
+		// stagger when each card stops spinning and lands on its digit ( left to right cascade )
+		var lockTimes = { 1: 600, 2: 800, 3: 1000, 4: 1200, 5: 1400 };
+		var settled = 0;
+
+		// flip a slot through random digits while it is spinning, then land it sharp on its
+		// real digit once its stagger time has flipped spinning off. folds chain via onComplete
+		// ( only ever starting a new fold when the previous finishes ) so they never collide.
+		var spinTo = function( number ) {
+			var flipperClassName = self.containerClassCss + '-number-' + number;
+
+			if ( self.spinning[number] ) { // keep folding fast through random digits
+				self.flip( number, self.getRandomNonRepeating( number, 0, 9, 4 ), function() {
+					spinTo( number );
+				} );
+			} else { // time is up: land this card sharp on its final digit
+				$( flipperClassName ).removeClass( 'lost-flipper-blur' );
+
+				self.flip( number, finalNums[number], function() {
+					if ( ++settled === 5 ) { // last card settled: drop the spin and start the countdown
+						$( self.containerClassCss + ' .lost-flipper' ).removeClass( 'lost-flipper-spin' );
+						self.initializeTimer( self.initialSeconds );
+						self.startTimer();
+					}
+				} );
+			}
+		};
+
+		for ( var number = 1; number <= 5; number++ ) { // start every card spinning
+			( function( number ) {
+				// kick off this slot's continuous fast fold chain
+				self.spinning[number] = true;
+				spinTo( number );
+
+				// stop this card after its stagger time; the running chain then lands it on its digit
+				self.glyphTimeouts[number] = setTimeout( function() {
+					self.spinning[number] = false;
+				}, lockTimes[number] );
+			} )( number );
+		}
     };
 
 	// return it
