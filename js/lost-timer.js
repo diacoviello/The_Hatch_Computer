@@ -48,11 +48,8 @@ var lostTimer = ( function() {
 		// create lost timer html and populate it to the container
 		self.drawTimer();
 
-		// update height/width/font-size/margin-left according to the height
-		$( self.containerClassCss + ' .lost-flipper' ).css( 'height', self.height + 'px' );
-		$( self.containerClassCss + ' .lost-flipper' ).css( 'width', self.width + 'px' );
-		$( self.containerClassCss + ' .lost-flipper' ).css( 'font-size', ( self.height * .8 ) + 'px' );
-		$( self.containerClassCss + ' .lost-timer-side-right' ).css( 'margin-left', ( self.width / 6 ) + 'px' );
+		// digit size/position is handled in css so the numbers fit the casing windows and
+		// scale with it; self.height is still used to pick the glyph image resolution
 
 		// setup audio for use
 		self.setupAudio();
@@ -69,7 +66,8 @@ var lostTimer = ( function() {
 	 *
 	 * @return void
 	 */
-	lostTimer.prototype.drawTimer = function() {
+	lostTimer.prototype.drawTimer=function() {
+		// console.log( 'drawing timer' );
 		// give us our self
 		var self = this;
 
@@ -124,8 +122,8 @@ var lostTimer = ( function() {
 				'</div>' +
 			'</div>';
 
-			// add html to the container element
-			$( self.containerClassCss ).append( devHtml );
+			// add the dev panel to the body ( not inside the casing, which clips overflow )
+			$( 'body' ).append( devHtml );
 
 			$( self.containerClassCss + '-dev-action-reset' ).on( 'click', function () { // on click for timer reset
 				self.reset();
@@ -154,7 +152,8 @@ var lostTimer = ( function() {
 	 *
 	 * @return string
 	 */
-	lostTimer.prototype.getTimerNumberSlotHtml = function( number ) {
+	lostTimer.prototype.getTimerNumberSlotHtml=function( number ) {
+		// console.log( 'getting timer number slot html for number ' + number );
 		// deteremine background color
 		var backgroundColor = number > 3 ? 'white' : 'black';
 
@@ -257,16 +256,25 @@ var lostTimer = ( function() {
 	/**
 	 * Play audio file
 	 *
-	 * @params str key name of the audio file name
+	 * @params str key      name of the audio file name
+	 * @params boo restart  (optional) rewind to the start so the sound retriggers from the beginning
 	 *
 	 * @return void
 	 */
-	lostTimer.prototype.playAudio = function( key ) {
+	lostTimer.prototype.playAudio=function( key, restart ) {
+		// console.log( 'playing audio with key: ' + key );
 		// get self
 		var self = this;
 
+		// the audio element for this sound
+		var audio = $( self.containerClassCss + '-audio-' + key )[0];
+
+		if ( restart ) { // rewind so the sound plays fresh from the start
+			audio.currentTime = 0;
+		}
+
 		// play specified audio by key
-		$( self.containerClassCss + '-audio-' + key )[0].play();
+		audio.play();
 	};
 
 	/**
@@ -276,7 +284,8 @@ var lostTimer = ( function() {
 	 *
 	 * @return void
 	 */
-	lostTimer.prototype.initializeTimer = function( initialSeconds ) {
+	lostTimer.prototype.initializeTimer=function( initialSeconds ) {
+		// console.log( 'initializing timer with ' + initialSeconds + ' seconds' );
 		// give us our self
 		var self = this;
 
@@ -301,7 +310,8 @@ var lostTimer = ( function() {
 	 *
 	 * @return void
 	 */
-	lostTimer.prototype.updateNumbers = function( isRandom ) {
+	lostTimer.prototype.updateNumbers=function( isRandom ) {
+		// console.log( 'updating numbers with isRandom: ' + isRandom );
 		// give us our self
 		var self = this;
 
@@ -321,13 +331,20 @@ var lostTimer = ( function() {
 	 *
 	 * @return void
 	 */
-	lostTimer.prototype.updateTimeVars = function() {
+	lostTimer.prototype.updateTimeVars=function() {
+		// console.log( 'updating time vars' );
 		// get self
 		var self = this;
 
 		// calculate minutes and seconds
-        self.minutes = parseInt( self.totalSeconds / 60 );
-        self.seconds = parseInt( self.totalSeconds % 60 );
+        if ( self.totalSeconds >= 240 ) { // above four minutes only the minutes show, so hold each
+        	// minute until the seconds reach 00 ( e.g. 108 stays until 107:00, then flips to 107 )
+        	self.minutes = Math.ceil( self.totalSeconds / 60 );
+        	self.seconds = 0;
+        } else { // last four minutes display normal minutes:seconds
+        	self.minutes = parseInt( self.totalSeconds / 60 );
+        	self.seconds = parseInt( self.totalSeconds % 60 );
+        }
 
         if ( self.minutes < 100 && self.minutes > 9 ) { // two digit range needing one zero
         	self.minutes = '0' + self.minutes;
@@ -351,32 +368,34 @@ var lostTimer = ( function() {
 	 *
 	 * @return void
 	 */
-	lostTimer.prototype.startTimer = function() {
+	lostTimer.prototype.startTimer=function() {
+		// console.log( 'starting timer' );
 		// get self
 		var self = this;
 
 		self.timer = setInterval( function () {
 			self.onTick();
 
-			if ( 0 == self.seconds || self.totalSeconds < 240 ) { // play ticker below four minutes
+			if ( self.totalSeconds % 60 == 0 || self.totalSeconds < 240 ) { // tick each minute boundary, and every second below four minutes
 				self.playAudio( 'tick' );
 			}
 
-			if ( self.totalSeconds < 240 && self.totalSeconds % 2 == 0 && self.totalSeconds > 60 ) { // play beep below four minutes and even number
+			if ( self.totalSeconds <= 240 && self.totalSeconds % 2 == 0 && self.totalSeconds > 60 ) { // play beep below four minutes and even number
 				self.playAudio( 'beep' );
 			}
 
-			if ( // play the alarm when only one minute is left every other second and every second if below ten seconds
-				( self.totalSeconds <= 60 && self.totalSeconds % 2 == 0 ) ||
-				( self.totalSeconds < 10 )
-			) {
+			if ( self.totalSeconds < 10 ) { // final ten seconds: a fresh alarm every second
+				self.playAudio( 'alarm', true );
+			} else if ( self.totalSeconds <= 60 && self.totalSeconds % 2 == 0 ) { // last minute: alarm every other second
 				self.playAudio( 'alarm' );
 			}
 
     		self.updateTimeVars();
 
-	        if ( 'dev' == self.mode ) { // update js timer
-	       		$( self.containerClassCss + '-timer' ).html( self.minutes + ":" + self.seconds );
+	        if ( 'dev' == self.mode ) { // update js timer with the real remaining time ( ticks every second )
+	       		var devMinutes = parseInt( self.totalSeconds / 60 );
+	       		var devSeconds = self.totalSeconds % 60;
+	       		$( self.containerClassCss + '-timer' ).html( devMinutes + ":" + ( devSeconds < 10 ? "0" + devSeconds : devSeconds ) );
 	       	}
 
 	        // always try and flip the first three numbers
@@ -405,17 +424,17 @@ var lostTimer = ( function() {
 	 *
 	 * @params int number number slot to try and flip to the next number
 	 * @params int value value for the target flipper
+	 * @params fun onComplete (optional) run once the fold finishes ( used to chain the fast spin )
 	 *
 	 * @return void
 	 */
-	lostTimer.prototype.flip = function( number, value ) {
+	lostTimer.prototype.flip=function( number, value, onComplete ) {
 		// get self
-		var self = this; 
+		var self = this;
 
-		if ( String( value ) != $( self.containerClassCss + '-number-' + number + ' .lost-flipper-prev .lost-flipper-number-table-cell' ).html() ) { // only flip if next/prev numbers are different
-			// clone tranforming elements
-	      	var flipperClassName = self.containerClassCss + '-number-' + number;
+		var flipperClassName = self.containerClassCss + '-number-' + number;
 
+		if ( String( value ) != $( flipperClassName + ' .lost-flipper-prev .lost-flipper-number-table-cell' ).html() ) { // only flip if next/prev numbers are different
 	      	// update the next number to the value
 	      	$( flipperClassName + ' .lost-flipper-next .lost-flipper-number-table-cell' ).html( value );
 
@@ -423,6 +442,9 @@ var lostTimer = ( function() {
 	        var flipperNext = $( flipperClassName + ' .lost-flipper-next' ).clone();
 			var flipperNextAfter = $( flipperClassName + ' .lost-flipper-next .lost-flipper-number-after' ).clone();
 			var flipperPrevBefore = $( flipperClassName + ' .lost-flipper-prev .lost-flipper-number-before' ).clone();
+
+			// force the browser to acknowledge the rest state so back to back folds animate instead of jumping
+			void $( flipperClassName )[0].offsetHeight;
 
 			// make flip transform active
 			$( flipperClassName + ' .lost-flipper-next' ).addClass( 'lost-flipper-next-active' );
@@ -434,9 +456,14 @@ var lostTimer = ( function() {
 				$( flipperClassName + ' .lost-flipper-next .lost-flipper-number-after' ).replaceWith( flipperNextAfter );
 				$( flipperClassName + ' .lost-flipper-prev .lost-flipper-number-before' ).replaceWith( flipperPrevBefore );
 
-				// update the prev number to the value 
+				// update the prev number to the value
 				$( flipperClassName + ' .lost-flipper-prev .lost-flipper-number-table-cell' ).html( value );
+
+				// continue the chained spin once this fold has fully reset
+				if ( onComplete ) { onComplete(); }
 			} );
+		} else if ( onComplete ) { // nothing different to fold, keep the chain going
+			onComplete();
 		}
 	};
 
@@ -448,25 +475,61 @@ var lostTimer = ( function() {
 	 *
 	 * @return int
 	 */
-	lostTimer.prototype.getRandomNumber = function( min, max ) {
+	lostTimer.prototype.getRandomNumber=function( min, max ) {
 		// generate random number between min and max and include the max
 		return Math.floor( Math.random() * ( max - min + 1 ) ) + min;
 	};
 
 	/**
-	 * Get html for glyph
+	 * Get a random number in [min,max] for a slot while avoiding values shown too
+	 * recently in that slot, so symbols don't repeat and visibly stall in the fast flip.
 	 *
-	 * @params int lostTimerNumber number slot
-	 * @params boo isRandom if true get random glyph html else get specified glyph 
+	 * @params int number     number slot the value is for
+	 * @params int min        minimum value for the random number
+	 * @params int max        maximum value for the random number
+	 * @params int avoidCount how many recently used values to avoid repeating
 	 *
 	 * @return int
 	 */
-	lostTimer.prototype.getGlyphHtml = function( lostTimerNumber, isRandom ) {
+	lostTimer.prototype.getRandomNonRepeating=function( number, min, max, avoidCount ) {
 		// get self
 		var self = this;
 
-		// if random get number between 1 and 5 else use the number passed in
-		var glyphNumber = isRandom ? self.getRandomNumber( 1, 5 ): lostTimerNumber;
+		// per slot history of the values used recently
+		self.recentSymbols = self.recentSymbols || {};
+		var recent = self.recentSymbols[number] || [];
+
+		// pick a value that has not been used too recently ( give up after a few tries )
+		var value, attempts = 0;
+		do {
+			value = self.getRandomNumber( min, max );
+		} while ( recent.indexOf( value ) !== -1 && ++attempts < 20 );
+
+		// remember it and trim the history down to the avoid window
+		recent.push( value );
+		while ( recent.length > avoidCount ) {
+			recent.shift();
+		}
+		self.recentSymbols[number] = recent;
+
+		return value;
+	};
+
+	/**
+	 * Get html for glyph
+	 *
+	 * @params int lostTimerNumber number slot ( sets the glyph color )
+	 * @params boo isRandom if true get random glyph html else get specified glyph
+	 * @params int glyphNumberOverride (optional) use this exact glyph image ( 1-5 )
+	 *
+	 * @return int
+	 */
+	lostTimer.prototype.getGlyphHtml = function( lostTimerNumber, isRandom, glyphNumberOverride ) {
+		// get self
+		var self = this;
+
+		// use the explicit glyph image if given, else a random one (1-5), else the slot's own number
+		var glyphNumber = ( typeof glyphNumberOverride !== 'undefined' ) ? glyphNumberOverride : ( isRandom ? self.getRandomNumber( 1, 5 ) : lostTimerNumber );
 
 		// set color of the glyph text so we can generate the background color
 		var glyphColor = lostTimerNumber > 3 ? 'black' : 'red';
@@ -492,29 +555,52 @@ var lostTimer = ( function() {
 	 *
 	 * @return void
 	 */
-	lostTimer.prototype.stopGlyphs = function() {
+	lostTimer.prototype.stopGlyphs=function() {
+		console.log( 'stopping glyphs' );
 		// get self
 		var self = this;
 
-		// clear glyph intervals
-		clearInterval( self.glyphInterval1 );
-		clearInterval( self.glyphInterval2 );
-		clearInterval( self.glyphInterval3 );
-		clearInterval( self.glyphInterval4 );
-		clearInterval( self.glyphInterval5 );
+		// clear every flip interval that is spinning a card
+		$.each( self.glyphIntervals || {}, function( key, intervalId ) {
+			clearInterval( intervalId );
+		} );
 
-		// clear glyph timeouts
-		clearTimeout( self.glyphTimeout1 );
-		clearTimeout( self.glyphTimeout2 );
-		clearTimeout( self.glyphTimeout3 );
-		clearTimeout( self.glyphTimeout4 );
-		clearTimeout( self.glyphTimeout5 );
+		// clear every timeout used to lock cards in or switch their colors
+		$.each( self.glyphTimeouts || {}, function( key, timeoutId ) {
+			clearTimeout( timeoutId );
+		} );
+
+		// stop every slot's fold chain
+		self.spinning = {};
+
+		// reset the trackers and the color switch timeout
+		self.glyphIntervals = {};
+		self.glyphTimeouts = {};
+		clearTimeout( self.glyphColorTimeout );
+
+		// stop the fast split-flap flip and clear the motion blur
+		$( self.containerClassCss + ' .lost-flipper' ).removeClass( 'lost-flipper-spin lost-flipper-blur' );
+
+		// clear any half finished flip transforms
+		$( self.containerClassCss + ' .lost-flipper-next' ).removeClass( 'lost-flipper-next-active' );
+		$( self.containerClassCss + ' .lost-flipper-next .lost-flipper-number-after' ).removeClass( 'lost-flipper-next-after-active' );
+		$( self.containerClassCss + ' .lost-flipper-prev .lost-flipper-number-before' ).removeClass( 'lost-flipper-prev-before-active' );
+
+		// restore each card to its original white/black number colors
+		for ( var number = 1; number <= 5; number++ ) {
+			$( self.containerClassCss + '-number-' + number )
+				.removeClass( 'lost-flipper-bg-glyph-red lost-flipper-bg-glyph-black' )
+				.addClass( number > 3 ? 'lost-flipper-bg-white' : 'lost-flipper-bg-black' );
+		}
 	};
 
 	/**
-	 * Roll glyphs randomly send timer into displaying random glyphs for each number slot
+	 * Roll glyphs by sending every card into a nonstop flip. Cards start by
+	 * flipping their normal white/black number colors and switch midway to the
+	 * red/black colors of the glyph each card is meant to end on, before locking
+	 * in that final glyph at staggered times.
 	 *
-	 * @return int
+	 * @return void
 	 */
 	lostTimer.prototype.rollGlyphs = function() {
 		// get self
@@ -526,68 +612,143 @@ var lostTimer = ( function() {
 		// play timeout sound
 		self.playAudio( 'timeout' );
 
-		self.glyphInterval1 = setInterval( function() { // get and show a random glyph in first number cell
-			$( self.containerClassCss + '-number-1 .lost-flipper-number-table-cell' ).html( self.getGlyphHtml( 1, true ) );
-		}, 50 );
+		// speed every card's split-flap flip way up and motion blur the folds for the fast roll
+		$( self.containerClassCss + ' .lost-flipper' ).addClass( 'lost-flipper-spin lost-flipper-blur' );
 
-		self.glyphInterval2 = setInterval( function() { // get and show a random glyph in second number cell
-			$( self.containerClassCss + '-number-2 .lost-flipper-number-table-cell' ).html( self.getGlyphHtml( 2, true ) );
-		}, 50 );
+		// track flip intervals/timeouts so they can all be cleared on reset
+		self.glyphIntervals = {};
+		self.glyphTimeouts = {};
 
-		self.glyphInterval3 = setInterval( function() { // get and show a random glyph in third number cell
-			$( self.containerClassCss + '-number-3 .lost-flipper-number-table-cell' ).html( self.getGlyphHtml( 3, true ) );
-		}, 50 );
+		// fresh per slot history for the non-repeating random symbols
+		self.recentSymbols = {};
 
-		self.glyphInterval4 = setInterval( function() { // get and show a random glyph in fourth number cell
-			$( self.containerClassCss + '-number-4 .lost-flipper-number-table-cell' ).html( self.getGlyphHtml( 4, true ) );
-		}, 50 );
+		// per slot flag that keeps each slot's continuous fold chain going until it locks
+		self.spinning = {};
 
-		self.glyphInterval5 =  setInterval( function() { // get and show a random glyph in fifth number cell
-			$( self.containerClassCss + '-number-5 .lost-flipper-number-table-cell' ).html( self.getGlyphHtml( 5, true ) );
-		}, 50 );		
+		// time each number slot stops flipping and locks onto its final glyph
+		var lockTimes = { 1: 10500, 2: 12000, 3: 7000, 4: 6000, 5: 8500 };
 
-		self.glyphTimeout1 = setTimeout( function() { // after 10.5 seconds
-			// stop glyph flipping
-			clearInterval( self.glyphInterval1 );
+		// point in the spin when every card switches from its white/black number
+		// colors over to the red/black colors of its final glyph
+		var colorSwitchTime = 1200;
 
-			// lock in glyph image
-			$( self.containerClassCss + '-number-1 .lost-flipper-number-table-cell' ).html( self.getGlyphHtml( 1, false ) );
-		}, 10500 );
+		for ( var number = 1; number <= 5; number++ ) { // start every card flipping
+			( function( number ) {
+				// kick off this slot's continuous split-flap fold chain
+				self.spinning[number] = true;
+				self.spinFlip( number );
 
-		self.glyphTimeout2 = setTimeout( function() { // after 12 seconds
-			// stop glyph flipping
-			clearInterval( self.glyphInterval2 );
+				// lock this card onto its final glyph once its time is up
+				self.glyphTimeouts[number] = setTimeout( function() {
+					self.lockGlyph( number );
+				}, lockTimes[number] );
+			} )( number );
+		}
 
-			// lock in glyph image
-			$( self.containerClassCss + '-number-2 .lost-flipper-number-table-cell' ).html( self.getGlyphHtml( 2, false ) );
-	
-			// start system failure			
+		// midway through the spin flip every card over to its glyph colors
+		self.glyphColorTimeout = setTimeout( function() {
+			for ( var number = 1; number <= 5; number++ ) {
+				self.setGlyphColors( number );
+			}
+		}, colorSwitchTime );
+	};
+
+	/**
+	 * Flip a slot to a fresh random face using the realistic split-flap fold, then
+	 * chain straight into the next fold so the spin folds continuously ( no idle gap )
+	 * the way the countdown flip does, just at the faster rate. A random number while
+	 * the slot is on its white/black colors, a random glyph once it is red/black.
+	 *
+	 * @params int number number slot to flip
+	 *
+	 * @return void
+	 */
+	lostTimer.prototype.spinFlip = function( number ) {
+		// get self
+		var self = this;
+
+		if ( !self.spinning || !self.spinning[number] ) { // this slot has locked or the spin stopped
+			return;
+		}
+
+		var flipperClassName = self.containerClassCss + '-number-' + number;
+
+		// once a slot has switched to its glyph colors flip random glyphs, else random numbers
+		var glyphPhase = $( flipperClassName ).hasClass( 'lost-flipper-bg-glyph-red' ) || $( flipperClassName ).hasClass( 'lost-flipper-bg-glyph-black' );
+
+		var value;
+
+		if ( glyphPhase ) { // random glyph image (1-5), avoiding the last couple shown
+			value = self.getGlyphHtml( number, false, self.getRandomNonRepeating( number, 1, 5, 2 ) );
+		} else { // random number (0-9), avoiding the last few shown
+			value = self.getRandomNonRepeating( number, 0, 9, 4 );
+		}
+
+		// flip the real card, then immediately start the next fold when this one finishes
+		self.flip( number, value, function() {
+			self.spinFlip( number );
+		} );
+	};
+
+	/**
+	 * Switch a card from its white/black number colors over to the red/black
+	 * colors of the glyph it is meant to end on.
+	 *
+	 * @params int number number slot to recolor
+	 *
+	 * @return void
+	 */
+	lostTimer.prototype.setGlyphColors = function( number ) {
+		// get self
+		var self = this;
+
+		// glyph color matches getGlyphHtml: slots 1-3 are red glyphs, 4-5 are black
+		var glyphColor = number > 3 ? 'black' : 'red';
+
+		// swap the card off its white/black colors and onto its glyph colors
+		$( self.containerClassCss + '-number-' + number )
+			.removeClass( 'lost-flipper-bg-white lost-flipper-bg-black' )
+			.addClass( 'lost-flipper-bg-glyph-' + glyphColor );
+
+		// reset the symbol history so leftover digits don't skew the glyph picks
+		if ( self.recentSymbols ) {
+			self.recentSymbols[number] = [];
+		}
+	};
+
+	/**
+	 * Stop a card spinning and lock it onto its final glyph image.
+	 *
+	 * @params int number number slot to lock in
+	 *
+	 * @return void
+	 */
+	lostTimer.prototype.lockGlyph = function( number ) {
+		// get self
+		var self = this;
+
+		// stop this slot's fold chain
+		if ( self.spinning ) {
+			self.spinning[number] = false;
+		}
+
+		// settle the card on its final glyph colors
+		self.setGlyphColors( number );
+
+		// stop the flip dead: cancel any in-flight fold and snap straight to the final glyph
+		var flipperClassName = self.containerClassCss + '-number-' + number;
+		$( flipperClassName ).removeClass( 'lost-flipper-blur' ); // land the glyph sharp, not blurred
+		$( flipperClassName + ' .lost-flipper-prev .lost-flipper-number-before' ).off( 'webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend' );
+		$( flipperClassName + ' .lost-flipper-next' ).removeClass( 'lost-flipper-next-active' );
+		$( flipperClassName + ' .lost-flipper-next .lost-flipper-number-after' ).removeClass( 'lost-flipper-next-after-active' );
+		$( flipperClassName + ' .lost-flipper-prev .lost-flipper-number-before' ).removeClass( 'lost-flipper-prev-before-active' );
+
+		// show the final glyph across every face
+		$( flipperClassName + ' .lost-flipper-number-table-cell' ).html( self.getGlyphHtml( number, false ) );
+
+		if ( 2 == number ) { // the last card to settle kicks off the system failure
 			self.systemFailure();
-		}, 12000 );
-
-		self.glyphTimeout3 = setTimeout( function() { // after 7 seconds
-			// stop glyph flipping
-			clearInterval( self.glyphInterval3 );
-
-			// lock in glyph image
-			$( self.containerClassCss + '-number-3 .lost-flipper-number-table-cell' ).html( self.getGlyphHtml( 3, false ) );
-		}, 7000 );
-
-		self.glyphTimeout4 = setTimeout( function() { // after 6 seconds
-			// stop glyph flipping
-			clearInterval( self.glyphInterval4 );
-
-			// lock in glyph image
-			$( self.containerClassCss + '-number-4 .lost-flipper-number-table-cell' ).html( self.getGlyphHtml( 4, false ) );
-		}, 6000 );
-
-		self.glyphTimeout5 = setTimeout( function() { // after 8.5 seconds
-			// stop glyph flipping
-			clearInterval( self.glyphInterval5 );
-
-			// lock in glyph image
-			$( self.containerClassCss + '-number-5 .lost-flipper-number-table-cell' ).html( self.getGlyphHtml( 5, false ) );
-		}, 8500 );
+		}
 	};
 
 	/**
@@ -662,19 +823,60 @@ var lostTimer = ( function() {
 		// stop all glyphs
 		self.stopGlyphs();
 
-		// count times we play reset animation
-		var count = 0;
-		
-		resetAnimate = setInterval( function () { // randomly display number in each spot until reset sound is complete
-			// update the number slots html
-			self.updateNumbers( true );
+		// work out the digits the timer will settle on for the initial time
+		self.totalSeconds = self.initialSeconds;
+		self.minutes = self.initialSeconds;
+		self.seconds = self.initialSeconds;
+		self.updateTimeVars();
+		var finalNums = { 1: self.num1, 2: self.num2, 3: self.num3, 4: self.num4, 5: self.num5 };
 
-			if ( ++count > 10 ) { // after 10 times stop reset initialize and start timer
-	            clearInterval( resetAnimate );
-	            self.initializeTimer( self.initialSeconds );
-            	self.startTimer();
-	        }
-		}, 120 );
+		// use the same fast, blurred split-flap spin as the 0:00 glyph roll
+		$( self.containerClassCss + ' .lost-flipper' ).addClass( 'lost-flipper-spin lost-flipper-blur' );
+
+		// fresh per slot state so the fast roll picks non-repeating digits and each fold chains
+		self.recentSymbols = {};
+		self.spinning = {};
+		self.glyphTimeouts = {};
+
+		// stagger when each card stops spinning and lands on its digit ( left to right cascade )
+		var lockTimes = { 1: 600, 2: 800, 3: 1000, 4: 1200, 5: 1400 };
+		var settled = 0;
+
+		// flip a slot through random digits while it is spinning, then land it sharp on its
+		// real digit once its stagger time has flipped spinning off. folds chain via onComplete
+		// ( only ever starting a new fold when the previous finishes ) so they never collide.
+		var spinTo = function( number ) {
+			var flipperClassName = self.containerClassCss + '-number-' + number;
+
+			if ( self.spinning[number] ) { // keep folding fast through random digits
+				self.flip( number, self.getRandomNonRepeating( number, 0, 9, 4 ), function() {
+					spinTo( number );
+				} );
+			} else { // time is up: land this card sharp on its final digit
+				$( flipperClassName ).removeClass( 'lost-flipper-blur' );
+
+				self.flip( number, finalNums[number], function() {
+					if ( ++settled === 5 ) { // last card settled: drop the spin and start the countdown
+						$( self.containerClassCss + ' .lost-flipper' ).removeClass( 'lost-flipper-spin' );
+						self.initializeTimer( self.initialSeconds );
+						self.startTimer();
+					}
+				} );
+			}
+		};
+
+		for ( var number = 1; number <= 5; number++ ) { // start every card spinning
+			( function( number ) {
+				// kick off this slot's continuous fast fold chain
+				self.spinning[number] = true;
+				spinTo( number );
+
+				// stop this card after its stagger time; the running chain then lands it on its digit
+				self.glyphTimeouts[number] = setTimeout( function() {
+					self.spinning[number] = false;
+				}, lockTimes[number] );
+			} )( number );
+		}
     };
 
 	// return it

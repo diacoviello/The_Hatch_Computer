@@ -29,25 +29,88 @@
 				background: #181818;
 				margin: 0;
 				padding: 0;
-				font-family: 'Helvetica', sans-serif;
 				overflow-x: hidden;
+				font-family: 'apple-ii'; 
 			}
 
 			.my-timer-container {
-				width: 692px;
+				width: min( 692px, calc( 100vw - 40px ) );
+				aspect-ratio: 1257 / 714;
+				position: relative;
+				/* establish a query container so the digits can be sized off the casing and scale with it */
+				container-type: size;
 				margin: 0 auto;
-				background: #272727;
-				box-shadow: 0px 0px 10px rgba( 255, 255, 255, 0.5 );
-				border-radius: 10px;
-				padding: 20px;
+				background: url( 'assets/casing/hatch counter box.png' ) center top / 100% 100% no-repeat;
+				box-shadow: none;
+				border-radius: 0;
+				padding: 0;
 				margin-top: 20px;
 				margin-bottom: 40px;
+				overflow: hidden;
 			}
 
 			@media only screen and (max-width: 700px) {
 				.my-timer-container {
-					width: 287px;
+					width: calc( 100vw - 24px );
 				}
+			}
+
+			.lost-timer {
+				position: absolute;
+				inset: 0;
+			}
+
+			/* each digit group is positioned directly over its window cut into the casing */
+			.lost-timer-side {
+				position: absolute;
+				top: 20.2%;
+				height: 39.9%;
+				box-sizing: border-box;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				gap: 1cqw;
+				padding: 0;
+				margin: 0;
+				background: transparent;
+				box-shadow: none;
+			}
+
+			/* left window: the three minute digits */
+			.lost-timer-side-left {
+				float: none;
+				left: 7.8%;
+				width: 47.4%;
+			}
+
+			/* right window: the two second digits */
+			.lost-timer-side-right {
+				float: none;
+				left: 59.7%;
+				width: 31.3%;
+				margin-left: 0;
+			}
+
+			.lost-timer-number {
+				float: none;
+				margin: 0;
+				/* each card grows to take an equal share of its window so the cards
+				   stretch to fill the space evenly rather than the gaps between them */
+				flex: 1;
+				min-width: 0;
+			}
+
+			.lost-timer-number-center-bar {
+				display: none;
+			}
+
+			/* digits are sized off the casing (cqh/cqw) so they fill each window and scale with it;
+			   width comes from the flex share of the window so the cards stretch evenly */
+			.lost-flipper {
+				height: 37cqh;
+				width: 100%;
+				font-size: 29cqh;
+				border-radius: 2px;
 			}
 
 			.console-container {
@@ -63,40 +126,55 @@
 				padding-top: 5px;
 				padding-bottom: 15px;
 				box-sizing: border-box;
+				/* keep the prompt and input on one line; input takes whatever
+				   width is left so the prompt's font size never forces a wrap */
+				display: flex;
+				align-items: baseline;
+				text-align: center;
 			}
 
 			.console-prompt {
 				font-size: 40px;
-				display: inline-block;
 				color: #43b047;
+				font-family: 'apple-ii';
 			}
 
 			.console-input {
-				width: calc( 100% - 50px );
-				display: inline-block;
+				flex: 1;
+				min-width: 0;
 				margin-left: 5px;
+				font-family: 'apple-ii';
+				text-align: left;
 			}
 
 			.my-console {
 				outline: none;
 				border: none;
 				box-sizing: border-box;
-				font-size: 32px;
+				font-size: 40px;
 				background: transparent;
 				color: #43b047;
 				width: 100%;
-				font-family: inherit;
+				font-family: 'apple-ii';
+				text-align: left;
 			}
 
 			.timer-modes {
 				text-align: center;
 				margin-top: 20px;
 				font-weight: bold;
-				font-size: 12px;
+				font-size: 16px;
 			}
 
 			.timer-mode {
 				margin-bottom: 10px;
+			}
+
+			.lost-timer-dev {
+				width: min( 692px, calc( 100vw - 40px ) );
+				margin: 20px auto 40px;
+				padding: 0 20px;
+				box-sizing: border-box;
 			}
 		</style>
 
@@ -114,7 +192,7 @@
 				var timer = new lostTimer( { // create timer
 					initialSeconds: parseInt( seconds ), // initial seconds to begin the timer at
 					mode: urlParams.get( 'mode' ), // specify mode of dev|live
-					height: $( window ).width() > 700 ? 200 : 70, // specify the height of the timer
+					height: $( window ).width() > 700 ? 150 : 52, // specify the height of the timer
 					onTick: function() { // do things on each tick of the countdown
 						if ( timer.totalSeconds <= 240 && timer.totalSeconds > 0 ) { // enable numbers input and focus on input
 							$( '.my-console' ).prop( 'disabled', false );
@@ -126,7 +204,7 @@
 					}
 				} );
 
-				$( '.my-console' ).on( 'keyup', function( e ) { // on keyup for console input
+				$( '.my-console' ).on( 'keydown', function( e ) { // on keydown for console input
 					timer.playAudio( 'keypress' );
 
 					if ( e.keyCode == 13 && timer.theNumbersString == $( this ).val() ) { // enter key was pressed and numbers are correct
