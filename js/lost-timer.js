@@ -68,7 +68,6 @@ var lostTimer = ( function() {
 	 */
 	lostTimer.prototype.drawTimer=function() {
 		// console.log( 'drawing timer' );
-		// give us our self
 		var self = this;
 
 		// generate html for the timer
@@ -88,61 +87,7 @@ var lostTimer = ( function() {
 		// add end screen to the body
 		$( 'body' ).append( '<div class="lost-timer-end-screen"></div>' );
 
-		if ( 'dev' == self.mode ) {
-			var devHtml = '<div class="' + self.containerClass + '-dev">' +
-				'<div class="lost-timer-dev-main-text">' +
-					'Mode: Dev' +
-				'</div>' +
-				'<div class="lost-timer-dev-main-text">' +
-					'Timer: ' +
-					'<span class="' + self.containerClass + '-timer">' +
-
-					'</span>' +
-				'</div>' +
-				'<div class="' + self.containerClass + '-dev-action ' + self.containerClass + '-dev-action-set" data-seconds="6480">' + 
-					'Set Timer to 108 minutes' +
-				'</div>' +
-				'<div class="' + self.containerClass + '-dev-action ' + self.containerClass + '-dev-action-set" data-seconds="240">' + 
-					'Set Timer to 4 minutes' +
-				'</div>' +
-				'<div class="' + self.containerClass + '-dev-action ' + self.containerClass + '-dev-action-set" data-seconds="60">' + 
-					'Set Timer to 1 minute' +
-				'</div>' +
-				'<div class="' + self.containerClass + '-dev-action ' + self.containerClass + '-dev-action-set" data-seconds="10">' + 
-					'Set Timer to 10 seconds' +
-				'</div>' +
-				'<div class="' + self.containerClass + '-dev-action ' + self.containerClass + '-dev-action-sound">' + 
-					'toggle sound' +
-				'</div>' +
-				'<div class="' + self.containerClass + '-dev-action ' + self.containerClass + '-dev-action-reset">' + 
-					'reset timer' +
-				'</div>' +
-				'<div class="' + self.containerClass + '-dev-action ' + self.containerClass + '-dev-action-glyphs">' + 
-					'roll glyphs' +
-				'</div>' +
-			'</div>';
-
-			// add the dev panel to the body ( not inside the casing, which clips overflow )
-			$( 'body' ).append( devHtml );
-
-			$( self.containerClassCss + '-dev-action-reset' ).on( 'click', function () { // on click for timer reset
-				self.reset();
-			} );
-
-			$( self.containerClassCss + '-dev-action-set' ).on( 'click', function () { // on click for setting the initial seconds
-				window.location.href = '?mode=dev&seconds=' + $( this ).data( 'seconds' );
-			} );
-
-			$( self.containerClassCss + '-dev-action-glyphs' ).on( 'click', function () { // on click for rolling glyphs
-				self.rollGlyphs();
-			} );
-
-			$( self.containerClassCss + '-dev-action-sound' ).on( 'click', function() { // on click for toggle sound
-				// toggle sound for all timer audio sounds
-				var bool = $( '.lost-timer-audio' ).prop( 'muted' );
-		        $( '.lost-timer-audio' ).prop( 'muted', !bool );
-			} );
-		}
+		// dev controls now live in the "Dev Mode Options" dropdown ( see index.html )
 	};
 
 	/**
@@ -235,21 +180,6 @@ var lostTimer = ( function() {
 
 			// append audio html to the container
 			$( self.containerClassCss ).append( audioHtml );
-
-			if ( 'dev' == self.mode ) { // display sounds with links for clicking and playing
-				// sound play link
-				var soundHtml = '<div class="lost-timer-dev-action ' + self.containerClass + '-play-' + self.sounds[i] + '">' +
-					'play ' + self.sounds[i] +
-				'</div>';
-
-				// add to html
-				$( self.containerClassCss + '-dev' ).append( soundHtml );
-
-				// onclick for playing the sound
-				$( self.containerClassCss + '-play-' + self.sounds[i] ).on( 'click', { sound: self.sounds[i] }, function( event ) {
-					self.playAudio( event.data.sound );
-				} );
-			}
 		}
 	};
 
@@ -392,11 +322,10 @@ var lostTimer = ( function() {
 
     		self.updateTimeVars();
 
-	        if ( 'dev' == self.mode ) { // update js timer with the real remaining time ( ticks every second )
-	       		var devMinutes = parseInt( self.totalSeconds / 60 );
-	       		var devSeconds = self.totalSeconds % 60;
-	       		$( self.containerClassCss + '-timer' ).html( devMinutes + ":" + ( devSeconds < 10 ? "0" + devSeconds : devSeconds ) );
-	       	}
+	        // update the status-line timer with the real remaining time ( ticks every second )
+	       	var devMinutes = parseInt( self.totalSeconds / 60 );
+	       	var devSeconds = self.totalSeconds % 60;
+	       	$( self.containerClassCss + '-timer' ).html( devMinutes + ":" + ( devSeconds < 10 ? "0" + devSeconds : devSeconds ) );
 
 	        // always try and flip the first three numbers
 	        self.flip( '1', self.num1 );
