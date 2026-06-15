@@ -1,0 +1,45 @@
+.console-container {
+	width: calc(100% - 40px);
+	margin: 0 auto;
+	background: #000000;
+	box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.5);
+	border-radius: 10px;
+	margin-top: 20px;
+	height: 250px;
+	padding-left: 23px;
+	padding-right: 15px;
+	padding-top: 23px;
+	padding-bottom: 15px;
+	box-sizing: border-box;
+	/* keep the prompt and input on one line; input takes whatever
+				   width is left so the prompt's font size never forces a wrap */
+	display: flex;
+	align-items: baseline;
+	text-align: center;
+}
+
+.console-prompt {
+	font-size: 42px;
+	color: #43b047;
+	font-family: 'apple-ii';
+}
+
+.console-input {
+	flex: 1;
+	min-width: 0;
+	margin-left: 5px;
+	font-family: 'apple-ii';
+	text-align: left;
+}
+
+.my-console {
+	outline: none;
+	border: none;
+	box-sizing: border-box;
+	font-size: 40px;
+	background: transparent;
+	color: #43b047;
+	width: 100%;
+	font-family: 'apple-ii';
+	text-align: left;
+}

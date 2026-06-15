@@ -1,0 +1,209 @@
+@charset "utf-8";
+
+/* timer status line shown above the mode selector in both modes */
+.timer-status-row {
+	text-align: center;
+	color: #ffffff;
+	font-weight: bold;
+	font-size: 16px;
+	margin-top: 8px;
+}
+
+.timer-status-row > span {
+	margin: 0 10px;
+}
+
+/* mode selector header ( DEV MODE | LIVE MODE ) shown below the timer */
+.mode-selector {
+	text-align: center;
+	margin-top: 8px;
+	font-weight: bold;
+	font-size: 23px;
+}
+
+.mode-divider {
+	color: #4CAF50;
+	margin: 0 8px;
+}
+
+.mode-label {
+	color: #4CAF50;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.mode-label:hover {
+	text-decoration: underline;
+}
+
+/* the Dev Mode Options dropdown sits in its own row below the mode selector;
+   it stays hidden until the page is loaded in dev mode ( body.dev-mode ) */
+.dev-options-row {
+	display: none;
+	text-align: center;
+	margin-top: 30px;
+}
+
+body.dev-mode .dev-options-row {
+	display: block;
+}
+
+.dropdown {
+	position: relative;
+	display: inline-block;
+	text-align: center;
+}
+
+/* dropdown trigger ( "Dev Mode Options" ) styled as a button */
+.dropbtn {
+	display: inline-block;
+	background-color: #4CAF50;
+	color: white;
+	font-weight: bold;
+	font-size: 16px;
+	padding: 12px 20px;
+	border: none;
+	border-radius: 6px;
+	cursor: pointer;
+}
+
+.dropbtn:hover,
+.dropbtn:focus {
+	background-color: #3e8e41;
+}
+
+/* Dropdown content */
+.dropdown-content {
+	display: none;
+	/* absolutely positioned + centered under the trigger so the menu is sized to its
+	   own content rather than stretching across the whole row */
+	position: absolute;
+	left: 50%;
+	transform: translateX( -50% );
+	text-align: left;
+	background-color: #030303;
+	min-width: 200px;
+	box-shadow: 0px 8px 16px 0px rgba( 0, 0, 0, 0.2 );
+	z-index: 10;
+	line-height: 1.6;
+	/* never taller than the screen; scroll inside the menu if the options don't fit */
+	max-height: 75vh;
+	overflow-y: auto;
+}
+
+/* grid variant: show all options at once in a 3-column block */
+.dropdown-content-grid {
+	grid-template-columns: repeat( 3, 1fr );
+	width: min( 560px, calc( 100vw - 40px ) );
+	min-width: 0;
+}
+
+/* Links inside dropdown content; flex so the prompt sits in its own column and any
+   wrapped/overflow text lines up with the first word rather than under the ">:" */
+.dropdown-content a {
+	color: #4CAF50;
+	padding: 12px 16px;
+	text-decoration: none;
+	display: flex;
+}
+
+/* reserve space for the console prompt ( >: ); transparent until hovered so the text never shifts */
+.dropdown-content a::before {
+	content: ">:";
+	color: transparent;
+	margin-right: 6px;
+	flex: 0 0 auto;
+}
+
+/* on hover, reveal the prompt instead of highlighting the item */
+.dropdown-content a:hover::before {
+	color: #43b047;
+}
+
+/* Show the dropdown content on hover ( mouse ) or focus-within ( keyboard / touch tap ) */
+.dropdown:hover .dropdown-content,
+.dropdown:focus-within .dropdown-content {
+	display: block;
+}
+
+.dropdown:hover .dropdown-content-grid,
+.dropdown:focus-within .dropdown-content-grid {
+	display: grid;
+}
+
+/* responsive: fewer columns on smaller screens so options aren't squeezed/cut off */
+@media only screen and (max-width: 700px) {
+	.dropdown-content-grid {
+		grid-template-columns: repeat( 2, 1fr );
+		width: calc( 100vw - 20px );
+	}
+}
+
+@media only screen and (max-width: 430px) {
+	.dropdown-content-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* ===========================================================================
+   classic Mac OS ( System 6/7 ) scrollbar, recolored for the hatch's green
+   phosphor terminal: chunky 16px bar, 1px dithered checkerboard track, square
+   beveled arrow buttons, and a beveled thumb. Webkit ( Chrome/Safari/Edge ).
+   =========================================================================== */
+.dropdown-content::-webkit-scrollbar {
+	width: 16px;
+}
+
+/* the track: classic 50% dither rendered as a 1px green/black checkerboard */
+.dropdown-content::-webkit-scrollbar-track {
+	background-color: #001a00;
+	background-image: repeating-conic-gradient( #0c3d0c 0 25%, #001a00 0 50% );
+	background-size: 2px 2px;
+	border-left: 1px solid #000000;
+}
+
+/* the thumb: beveled outset box ( light top-left, dark bottom-right ) */
+.dropdown-content::-webkit-scrollbar-thumb {
+	background-color: #2e7d32;
+	border: 1px solid #000000;
+	box-shadow: inset 2px 2px 0 #74e074, inset -2px -2px 0 #0a3d0a;
+}
+
+.dropdown-content::-webkit-scrollbar-thumb:active {
+	background-color: #256628;
+	box-shadow: inset 2px 2px 0 #0a3d0a, inset -2px -2px 0 #74e074;
+}
+
+/* the arrow buttons at each end: beveled square + a phosphor-green triangle */
+.dropdown-content::-webkit-scrollbar-button:vertical {
+	height: 16px;
+	background-color: #2e7d32;
+	border: 1px solid #000000;
+	box-shadow: inset 2px 2px 0 #74e074, inset -2px -2px 0 #0a3d0a;
+	background-repeat: no-repeat;
+	background-position: center;
+}
+
+.dropdown-content::-webkit-scrollbar-button:vertical:decrement {
+	background-image: url( "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Cpolygon points='8,4 12,11 4,11' fill='%23042704'/%3E%3C/svg%3E" );
+}
+
+.dropdown-content::-webkit-scrollbar-button:vertical:increment {
+	background-image: url( "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Cpolygon points='4,5 12,5 8,12' fill='%23042704'/%3E%3C/svg%3E" );
+}
+
+/* hide the extra double-button arrows so each end shows a single classic arrow */
+.dropdown-content::-webkit-scrollbar-button:vertical:start:increment,
+.dropdown-content::-webkit-scrollbar-button:vertical:end:decrement {
+	display: none;
+}
+
+.dropdown-content::-webkit-scrollbar-corner {
+	background-color: #001a00;
+}
+
+/* Firefox fallback ( no dither/arrows available ): green thumb on a dark track */
+.dropdown-content {
+	scrollbar-width: auto;
+	scrollbar-color: #2e7d32 #001a00;
+}

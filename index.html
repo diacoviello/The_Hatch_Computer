@@ -14,6 +14,9 @@
 
 		<!-- lost timer css -->
 		<link href="css/lost-timer.css" rel="stylesheet" type="text/css">
+		<link href="css/console.css" rel="stylesheet" type="text/css">
+		<link href="css/dropdown.css" rel="stylesheet" type="text/css">
+
 
 		<style>
 			a {
@@ -45,7 +48,7 @@
 				border-radius: 0;
 				padding: 0;
 				margin-top: 20px;
-				margin-bottom: 40px;
+				margin-bottom: 10px;
 				overflow: hidden;
 			}
 
@@ -113,53 +116,8 @@
 				border-radius: 2px;
 			}
 
-			.console-container {
-				width: calc( 100% - 40px );
-				margin: 0 auto;
-				background: #000000;
-				box-shadow: 0px 0px 10px rgba( 255, 255, 255, 0.5 );
-				border-radius: 10px;
-				margin-top: 40px;
-				height: 250px;
-				padding-left: 15px;
-				padding-right: 15px;
-				padding-top: 5px;
-				padding-bottom: 15px;
-				box-sizing: border-box;
-				/* keep the prompt and input on one line; input takes whatever
-				   width is left so the prompt's font size never forces a wrap */
-				display: flex;
-				align-items: baseline;
-				text-align: center;
-			}
-
-			.console-prompt {
-				font-size: 40px;
-				color: #43b047;
-				font-family: 'apple-ii';
-			}
-
-			.console-input {
-				flex: 1;
-				min-width: 0;
-				margin-left: 5px;
-				font-family: 'apple-ii';
-				text-align: left;
-			}
-
-			.my-console {
-				outline: none;
-				border: none;
-				box-sizing: border-box;
-				font-size: 40px;
-				background: transparent;
-				color: #43b047;
-				width: 100%;
-				font-family: 'apple-ii';
-				text-align: left;
-			}
-
 			.timer-modes {
+				position: absolute;
 				text-align: center;
 				margin-top: 20px;
 				font-weight: bold;
@@ -168,6 +126,12 @@
 
 			.timer-mode {
 				margin-bottom: 10px;
+				background-color: #4CAF50;
+				color: white;
+				padding: 16px;
+				font-size: 16px;
+				border: none;
+				cursor: pointer;
 			}
 
 			.lost-timer-dev {
@@ -189,6 +153,11 @@
 				// get seconds from url
 				var seconds = urlParams.get( 'seconds' ) ? urlParams.get( 'seconds' ) : 60 * 108;
 
+				// reveal the dev options dropdown only when in dev mode
+				if ( urlParams.get( 'mode' ) === 'dev' ) {
+					$( 'body' ).addClass( 'dev-mode' );
+				}
+
 				var timer = new lostTimer( { // create timer
 					initialSeconds: parseInt( seconds ), // initial seconds to begin the timer at
 					mode: urlParams.get( 'mode' ), // specify mode of dev|live
@@ -204,6 +173,11 @@
 					}
 				} );
 
+				// seed the status-line timer so it shows immediately ( before the first tick )
+				var initMinutes = parseInt( timer.totalSeconds / 60 );
+				var initSeconds = timer.totalSeconds % 60;
+				$( '.lost-timer-timer' ).html( initMinutes + ":" + ( initSeconds < 10 ? "0" + initSeconds : initSeconds ) );
+
 				$( '.my-console' ).on( 'keydown', function( e ) { // on keydown for console input
 					timer.playAudio( 'keypress' );
 
@@ -214,6 +188,46 @@
 						timer.reset();
 					}
 				} );
+
+				// dev dropdown actions ( the set-duration items above are plain links )
+				$( '.dev-reset' ).on( 'click', function( e ) {
+					e.preventDefault();
+					timer.reset();
+				} );
+
+				$( '.dev-roll-glyphs' ).on( 'click', function( e ) {
+					e.preventDefault();
+					timer.rollGlyphs();
+				} );
+
+				$( '.dev-toggle-sound' ).on( 'click', function( e ) {
+					e.preventDefault();
+					var muted = $( '.lost-timer-audio' ).prop( 'muted' );
+					$( '.lost-timer-audio' ).prop( 'muted', !muted );
+				} );
+
+				$( '.dev-play' ).on( 'click', function( e ) {
+					e.preventDefault();
+					timer.playAudio( $( this ).data( 'sound' ), true );
+				} );
+
+				// size the options menu to the space left below it so all options stay
+				// reachable ( the menu scrolls internally instead of running off-screen )
+				function sizeDevOptions() {
+					var content = $( '.dev-options-row .dropdown-content' );
+					if ( ! content.length ) return;
+					var top = content[0].getBoundingClientRect().top;
+					content.css( 'max-height', ( window.innerHeight - top - 12 ) + 'px' );
+				}
+
+				$( '.dev-options-row .dropdown' ).on( 'mouseenter focusin', sizeDevOptions );
+				$( window ).on( 'resize', sizeDevOptions );
+
+				// selecting an option returns the view to the top so the timer is visible
+				$( '.dev-options-row .dropdown-content a' ).on( 'click', function() {
+					$( ':focus' ).blur();
+					window.scrollTo( { top: 0, behavior: 'smooth' } );
+				} );
 			} );
 		</script>
 	</head>
@@ -221,6 +235,43 @@
 		<div class="my-timer-container">
 			<div class="lost-timer">
 
+			</div>
+		</div>
+
+		<!-- timer status line: shown in both modes, sits above the mode selector -->
+		<div class="timer-status-row">
+			<span>Timer: <span class="lost-timer-timer"></span></span>
+		</div>
+
+		<div class="mode-selector">
+			<a class="mode-label" href="?mode=dev">DEV MODE</a>
+			<span class="mode-divider">||</span>
+			<a class="mode-label" href="?mode=live">LIVE MODE</a>
+		</div>
+
+		<!-- dev options dropdown: hidden until the page is loaded in dev mode -->
+		<div class="dev-options-row">
+			<div class="dropdown">
+				<span class="dropbtn" tabindex="0">Dev Mode Options</span>
+				<div class="dropdown-content dropdown-content-grid">
+					<a href="?mode=dev&seconds=6480">Set Timer to 108 minutes</a>
+					<a href="?mode=dev&seconds=240">Set Timer to 4 minutes</a>
+					<a href="?mode=dev&seconds=60">Set Timer to 1 minute</a>
+					<a href="?mode=dev&seconds=10">Set Timer to 10 seconds</a>
+					<a href="#" class="dev-toggle-sound">toggle sound</a>
+					<a href="#" class="dev-reset">reset timer</a>
+					<a href="#" class="dev-roll-glyphs">roll glyphs</a>
+					<a href="#" class="dev-play" data-sound="alarm">play alarm</a>
+					<a href="#" class="dev-play" data-sound="beep">play beep</a>
+					<a href="#" class="dev-play" data-sound="discharge">play discharge</a>
+					<a href="#" class="dev-play" data-sound="keypress">play keypress</a>
+					<a href="#" class="dev-play" data-sound="reset">play reset</a>
+					<a href="#" class="dev-play" data-sound="spinup">play spinup</a>
+					<a href="#" class="dev-play" data-sound="systemfailure">play systemfailure</a>
+					<a href="#" class="dev-play" data-sound="thud">play thud</a>
+					<a href="#" class="dev-play" data-sound="tick">play tick</a>
+					<a href="#" class="dev-play" data-sound="timeout">play timeout</a>
+				</div>
 			</div>
 		</div>
 
@@ -233,17 +284,5 @@
 			</div>
 		</div>
 
-		<div class="timer-modes">
-			<div class="timer-mode">
-				<a href="?mode=dev">
-					Dev Mode
-				</a>
-			</div>
-			<div class="timer-mode">
-				<a href="?mode=live">
-					Live Mode
-				</a>
-			</div>
-		</div>
 	</body>
 </html>
